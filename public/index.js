@@ -159,6 +159,7 @@ const populateDbTable = (data, update = false) => {
   // Populate table rows
   pageData.forEach(row => {
     const tr = document.createElement('tr');
+    tr.classList.add("hover:bg-cyan-700")
     Object.keys(row).forEach(header => {
       const td = document.createElement('td');
       td.className = 'border border-gray-700 p-2';
@@ -204,14 +205,34 @@ pageSizeSelect.addEventListener('change', (event) => {
   populateDbTable(filteredData);
 });
 
-// Search functionality
+// Search Functionality with Column Filter
 searchInput.addEventListener('input', () => {
-  const query = searchInput.value.toLowerCase();
-  filteredData = table_data.filter(item => {
-    return Object.values(item).some(val => val.toString().toLowerCase().includes(query));
-  });
-  currentPage = 1;
-  populateDbTable(filteredData);
+  const searchQuery = searchInput.value.trim().toLowerCase();
+
+  // Check if the search query contains a column filter (e.g., name=John)
+  const columnSearchMatch = searchQuery.match(/^(\w+)\s*=\s*(.+)$/);
+
+  if (columnSearchMatch) {
+    const [_, column, searchTerm] = columnSearchMatch;
+
+    // Check if the column exists and filter accordingly
+    if (table_data[0][column]) {
+      const filteredData = table_data.filter(row =>
+        row[column].toString().toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      // Populate DB table with filtered results
+      populateDbTable(filteredData);
+    }
+  } else {
+    // If no column-specific search, search across all columns
+    const filteredData = table_data.filter(row =>
+      Object.values(row).some(value =>
+        value.toString().toLowerCase().includes(searchQuery)
+      )
+    );
+    // Populate DB table with filtered results
+    populateDbTable(filteredData);
+  }
 });
 
 // Sorting Functionality
