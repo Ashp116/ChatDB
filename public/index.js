@@ -75,11 +75,11 @@ const botTyping = () => {
   botTypingElement = document.createElement('div');
   botTypingElement.className = 'p-3 bg-gray-700 text-gray-300 rounded-lg max-w-[70%] mb-2 self-start';
   chatBox.appendChild(botTypingElement);
-  chatBox.scrollTop = chatBox.scrollHeight;
 
-  let typingText = "";
+  let typingText = ".";
   botTypingElement.textContent = typingText
 
+  chatBox.scrollTop = chatBox.scrollHeight;
   botTypingIntervalId = setInterval(() => {
     if (typingText.length === 3) {
       typingText = ".";
@@ -106,6 +106,7 @@ sendButton.addEventListener('click', () => {
     userMessage.textContent = `You: ${message}`;
     chatBox.appendChild(userMessage);
     chatInput.value = '';
+    chatBox.scrollTop = chatBox.scrollHeight;
     botTyping()
   }
 });
