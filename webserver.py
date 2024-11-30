@@ -7,13 +7,6 @@ from decimal import Decimal
 import websockets
 import json
 from SQLTransformer import SQLTransformer
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Store connected clients
-connected_clients = set()
-sql_transformer = SQLTransformer(auto_connect=False)
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -29,42 +22,45 @@ class CustomJSONEncoder(json.JSONEncoder):
             return None  # Convert NoneType to None (JSON's null)
         return super().default(obj)
 
-async def handle_connection(websocket):
-    # Add the connected client
-    connected_clients.add(websocket)
-    try:
-        async for message in websocket:
-            print(f"Received: {message}")
+class Webserver:
+    # Store connected clients
+    connected_clients = set()
+    sql_transformer = SQLTransformer(auto_connect=False)
 
-            # Example: Parse the message and send back a response
-            data = json.loads(message)
+    async def handle_connection(self, websocket):
+        # Add the connected client
+        self.connected_clients.add(websocket)
+        try:
+            async for message in websocket:
+                print(f"Received: {message}")
 
-            generated_sql = sql_transformer.generate_sql_query(data["user_input"])
-            response = {"reply": f"Generated SQL: {generated_sql}"}
+                # Example: Parse the message and send back a response
+                data = json.loads(message)
 
-            try:
-                result = sql_transformer.execute_sql_query(generated_sql)
+                generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
+                response = {"reply": f"Generated SQL: {generated_sql}"}
 
-                response["db_result"] = result
-            except:
-                response["db_result"] = None
+                try:
+                    result = self.sql_transformer.execute_sql_query(generated_sql)
 
-            await websocket.send(json.dumps(response, cls=CustomJSONEncoder))
-    except websockets.exceptions.ConnectionClosed as e:
-        print("Connection closed:", e)
-    finally:
-        # Remove the client when it disconnects
-        connected_clients.remove(websocket)
+                    response["db_result"] = result
+                except:
+                    response["db_result"] = None
 
+                await websocket.send(json.dumps(response, cls=CustomJSONEncoder))
+        except websockets.exceptions.ConnectionClosed as e:
+            print("Connection closed:", e)
+        finally:
+            # Remove the client when it disconnects
+            self.connected_clients.remove(websocket)
 
-async def main():
-    sql_transformer.connect_to_db()
-    sql_transformer.generate_db_schema()
-    # Start the WebSocket server
-    async with websockets.serve(handle_connection, "localhost", 8765,ping_interval=10,  ping_timeout=30):
-        print("WebSocket server is running on ws://localhost:8765")
-        await asyncio.Future()  # Run forever
+    async def start_server(self):
+        self.sql_transformer.connect_to_db()
+        self.sql_transformer.generate_db_schema()
+        # Start the WebSocket server
+        async with websockets.serve(self.handle_connection, "localhost", 8765, ping_interval=10, ping_timeout=30):
+            print("WebSocket server is running on ws://localhost:8765")
+            await asyncio.Future()  # Run forever
 
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    def run(self):
+        asyncio.run(self.start_server())
