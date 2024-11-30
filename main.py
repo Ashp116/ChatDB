@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from SQLTransformer import SQLTransformer
 from webserver import Webserver
+import inquirer
 
 load_dotenv()
 
@@ -28,13 +29,16 @@ def cli_loop():
             pass
 
 if __name__ == "__main__":
-    user_input = input("What type of interface do you want?\n1. CLI\n2. Web\n\nEnter you input: ")
-    while True:
-        if user_input == "1":
-            cli_loop()
-        elif user_input == "2":
-            print("Loading webserver...")
-            Webserver().run()
-        else:
-            print("Error, invalid input\n")
-            user_input = input("What type of interface do you want?\n1. CLI\n2. Web\n\nEnter you input")
+    questions = [
+        inquirer.List('interface_type',
+                      message="What type of interface do you want?",
+                      choices=['Web', 'CLI'],
+                      ),
+    ]
+
+    user_input = inquirer.prompt(questions)
+    if user_input['interface_type'] == "CLI":
+        cli_loop()
+    elif user_input['interface_type'] == "Web":
+        print("Loading webserver...")
+        Webserver().run()
