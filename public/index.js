@@ -78,6 +78,7 @@ const botTyping = () => {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   let typingText = "";
+  botTypingElement.textContent = typingText
 
   botTypingIntervalId = setInterval(() => {
     if (typingText.length === 3) {
