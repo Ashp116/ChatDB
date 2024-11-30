@@ -27,10 +27,25 @@
       border-right: 2px solid #ccc;
       animation: typing 1.5s steps(20) 0s infinite;
     }
+
+    /* Custom class for showing routing indicator in schema */
+    .column-routing {
+      display: inline-block;
+      position: relative;
+    }
+
+    .column-routing::after {
+      content: "→";
+      font-size: 1.2em;
+      color: #f39c12;
+      position: absolute;
+      right: -20px;
+    }
   </style>
 </head>
 <body class="bg-gray-900 h-screen flex py-10 px-10 sm:px-6 items-center justify-center">
   <div class="w-full h-full flex">
+    <!-- WebSocket Error Overlay -->
     <div id="error-overlay" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
       <div class="bg-gray-800 text-gray-300 p-6 rounded-lg shadow-lg text-center">
         <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
@@ -41,9 +56,42 @@
       </div>
     </div>
 
+    <!-- Overlay to show and edit schema -->
+<div id="schema-overlay" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+  <div class="bg-gray-800 text-gray-300 p-6 rounded-lg shadow-lg w-3/4 max-w-3xl flex flex-col">
+    <!-- Title Section -->
+    <h2 class="text-xl font-semibold mb-4 text-center">Edit Database Schema Context</h2>
+
+    <p class="text-sm text-gray-400">
+      Select a table to add to the schema context
+    </p>
+
+    <!-- Content Section with Flex Layout -->
+    <div class="flex space-x-4 overflow-hidden">
+      <!-- Schema tree section with scrollable content -->
+      <div id="schema-content" class="overflow-y-auto max-h-64 w-1/2 space-y-2 flex-grow">
+        <!-- Dynamically rendered schema content will go here -->
+      </div>
+
+      <!-- Selected Tables section with scrollable content -->
+      <div class="w-1/2 ml-4 space-y-4 overflow-y-auto max-h-64">
+        <h3 class="text-lg font-semibold">Selected Tables:</h3>
+        <div id="selected-tables" class="flex flex-wrap gap-2 justify-start">
+          <!-- Selected tables will be shown here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons at the Bottom -->
+    <div class="flex justify-between mt-4">
+      <button id="close-schema-button" class="bg-gray-600 text-gray-300 px-4 py-2 rounded-md hover:bg-gray-500">Close</button>
+      <button id="save-schema-button" class="bg-cyan-500 text-gray-900 px-4 py-2 rounded-md hover:bg-cyan-400">Save Changes</button>
+    </div>
+  </div>
+</div>
 
 
-    <!-- Chat Interface (takes up 50% of the width) -->
+    <!-- Chat Interface (50% width) -->
     <div class="w-1/2 bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg border-r border-gray-700 p-6 flex flex-col text-gray-300 rounded-l-lg">
       <h1 class="text-xl font-semibold mb-4 text-center">ChatDB</h1>
       <div id="chat-box" class="flex-grow overflow-y-auto p-4 space-y-4 bg-gray-800 rounded-md border border-gray-700">
@@ -68,18 +116,25 @@
       </div>
     </div>
 
-    <!-- Database Viewer (takes up the remaining 50% of the width) -->
+    <!-- Database Viewer (50% width) -->
     <div class="w-1/2 bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg p-6 flex flex-col text-gray-300 rounded-r-lg">
       <h2 class="text-xl font-semibold mb-4 text-center">Database Result Viewer</h2>
 
-      <!-- Search Input -->
-      <div class="mb-4">
+      <!-- Search Input and Edit Schema Button -->
+      <div class="mb-4 flex items-center">
         <input
           id="search-input"
           type="text"
           placeholder="Search (e.g., name=John, email=jane@example.com)"
           class="w-full p-2 bg-gray-800 text-gray-300 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-cyan-500"
         />
+        <button
+          id="edit-schema-button"
+          class="ml-4 px-6 py-2 bg-cyan-500 text-gray-800 rounded-md hover:bg-cyan-400 flex items-center space-x-2"
+        >
+          <i class="fas fa-edit text-xl text-gray-800"></i>
+          <span>Schema</span>
+        </button>
       </div>
 
       <div class="db-table-container">
@@ -106,6 +161,7 @@
       </div>
     </div>
   </div>
+
 <script src="index.js"></script>
 </body>
 </html>
