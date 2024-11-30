@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import os
+import subprocess
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -7,6 +9,9 @@ from decimal import Decimal
 import websockets
 import json
 from SQLTransformer import SQLTransformer
+
+current_dir = os.path.dirname(__file__)
+URL = os.path.join(current_dir, 'public', 'index.html')
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -63,4 +68,11 @@ class Webserver:
             await asyncio.Future()  # Run forever
 
     def run(self):
+        try:
+            os.startfile(URL)
+        except AttributeError:
+            try:
+                subprocess.call(['open', URL])
+            except:
+                print(f'Could not open {URL}')
         asyncio.run(self.start_server())
