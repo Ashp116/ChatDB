@@ -15,13 +15,23 @@ class SQLTransformer:
     model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-    def __init__(self):
-        self.sql_connection = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME")
-        )
+    def __init__(self, auto_connect=True):
+        if auto_connect:
+            self.sql_connection = mysql.connector.connect(
+                host=os.getenv("DB_HOST"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASSWORD"),
+                database=os.getenv("DB_NAME")
+            )
+
+    def connect_to_db(self):
+        if not hasattr(self, "sql_connection") or not self.sql_connection.is_connected():
+            self.sql_connection = mysql.connector.connect(
+                host=os.getenv("DB_HOST"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASSWORD"),
+                database=os.getenv("DB_NAME")
+            )
 
     def generate_db_schema(self):
         cursor = None
@@ -125,6 +135,9 @@ class SQLTransformer:
             result = cursor.fetchall()
 
             if result:
+                # Convert list of tuples to list of dictionaries
+                dict_result = [dict(zip(columns, row)) for row in result]
+
                 if self._verbose:
                     table = PrettyTable(list(dict.fromkeys(columns)))
                     for row in result:
@@ -134,11 +147,11 @@ class SQLTransformer:
                             continue
                     print(table)
 
-                return result
+                return dict_result
             else:
                 if self._verbose:
                     print("No results found for the query.")
-                return
+                return []
         except mysql.connector.Error as err:
             raise RuntimeError(f"Error: {err}")
         finally:
