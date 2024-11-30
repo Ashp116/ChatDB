@@ -9,6 +9,7 @@ const nextButton = document.getElementById('next-button');
 const pageSizeSelect = document.getElementById('page-size');
 const currentPageText = document.getElementById('current-page');
 const totalPagesText = document.getElementById('total-pages');
+const errorOverlay = document.getElementById('error-overlay');
 
 let table_data = [];
 let filteredData = [];
@@ -68,6 +69,7 @@ ws.addEventListener("error", (error) => {
 // Handle WebSocket Close
 ws.addEventListener("close", () => {
   console.log("Disconnected from WebSocket server.");
+  errorOverlay.classList.remove('hidden');
 });
 
 // Bot typing

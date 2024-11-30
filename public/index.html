@@ -31,6 +31,18 @@
 </head>
 <body class="bg-gray-900 h-screen flex py-10 px-10 sm:px-6 items-center justify-center">
   <div class="w-full h-full flex">
+    <div id="error-overlay" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div class="bg-gray-800 text-gray-300 p-6 rounded-lg shadow-lg text-center">
+        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+        <p class="mb-2 text-lg font-semibold">WebSocket Disconnected</p>
+        <p class="text-sm text-gray-400">
+          Check if the server is running or restart the app. Ensure ONE session is connected.
+        </p>
+      </div>
+    </div>
+
+
+
     <!-- Chat Interface (takes up 50% of the width) -->
     <div class="w-1/2 bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg border-r border-gray-700 p-6 flex flex-col text-gray-300 rounded-l-lg">
       <h1 class="text-xl font-semibold mb-4 text-center">ChatDB</h1>

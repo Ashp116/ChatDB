@@ -28,13 +28,22 @@ class CustomJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 class Webserver:
-    # Store connected clients
-    connected_clients = set()
+    # Track the single connected client
+    current_client = None
     sql_transformer = SQLTransformer(auto_connect=False)
 
     async def handle_connection(self, websocket):
-        # Add the connected client
-        self.connected_clients.add(websocket)
+        # Disconnect the previous client if there is one
+        if self.current_client is not None:
+            try:
+                await self.current_client.close()
+                print("Disconnected previous client.")
+            except websockets.exceptions.ConnectionClosed:
+                print("Previous client was already disconnected.")
+
+        # Set the new client as the current client
+        self.current_client = websocket
+
         try:
             async for message in websocket:
                 print(f"Received: {message}")
@@ -47,17 +56,18 @@ class Webserver:
 
                 try:
                     result = self.sql_transformer.execute_sql_query(generated_sql)
-
                     response["db_result"] = result
-                except:
+                except Exception as e:
                     response["db_result"] = None
+                    response["error"] = str(e)
 
                 await websocket.send(json.dumps(response, cls=CustomJSONEncoder))
         except websockets.exceptions.ConnectionClosed as e:
             print("Connection closed:", e)
         finally:
-            # Remove the client when it disconnects
-            self.connected_clients.remove(websocket)
+            # Reset the current client when the connection is closed
+            if self.current_client == websocket:
+                self.current_client = None
 
     async def start_server(self):
         self.sql_transformer.connect_to_db()
