@@ -305,11 +305,12 @@ const schemaData = [
   },
 ];
 
+// Update the renderSchema function to add event listeners correctly
 function renderSchema(schemaData) {
   const schemaContent = document.getElementById('schema-content');
   schemaContent.innerHTML = ''; // Clear previous content
 
-  schemaData.forEach((table) => {
+  schemaData.forEach((table, index) => {
     // Create table node
     const tableNode = document.createElement('div');
     tableNode.classList.add('space-y-2');
@@ -337,7 +338,6 @@ function renderSchema(schemaData) {
       'rounded-md'
     );
 
-
     // Table name text
     const tableNameText = document.createElement('div');
     tableNameText.innerText = table.tableName;
@@ -356,8 +356,8 @@ function renderSchema(schemaData) {
       'p-2',
       'rounded-md'
     );
-    tableNameText.addEventListener('click', () => {
-      selectTable(tableNameText, table.tableName);
+    tableNameText.addEventListener('click', (e) => {
+      handleTableSelection(e, table.tableName, index);
     });
 
     // Append the toggle icon and table name text to the tableNameContainer
@@ -446,24 +446,22 @@ function applyTreeVisuals() {
 }
 
 // Array to store selected tables
-let selectedTables = [];
+let selectedTables = {};
 
 // Function to select/deselect tables
-function selectTable(node, tableName) {
+function selectTable(node, tableName, tableIndex) {
   // Prevent event propagation to parent nodes
   event.stopPropagation();
 
   const item = node;
   const selectedTablesDiv = document.getElementById('selected-tables');
 
-  // Find the index of the table in the schemaData to generate a unique ID
-  const tableIndex = schemaData.findIndex(table => table.tableName === tableName);
-
   // Create a unique ID based on tableName and its index
   const uniqueId = `${tableName}-${tableIndex}`;
 
   // Toggle selection
   if (item.classList.contains('bg-cyan-600')) {
+    // Deselect the table
     item.classList.remove('bg-cyan-600', 'text-white');
     item.classList.add('text-gray-200');
 
@@ -474,8 +472,9 @@ function selectTable(node, tableName) {
     }
 
     // Remove table from selectedTables array
-    selectedTables = selectedTables.filter(table => table !== tableName);
+    delete selectedTables[uniqueId];
   } else {
+    // Select the table
     item.classList.add('bg-cyan-600', 'text-white');
 
     // Add table to the selected list
@@ -490,17 +489,33 @@ function selectTable(node, tableName) {
     // Add event to toggle selection when clicked again
     tableSelected.onclick = () => {
       // Deselect the table when clicked again
-      selectTable(item, tableName);
+      selectTable(item, tableName, tableIndex);
     };
 
     // Append the table to the selected tables list
     selectedTablesDiv.appendChild(tableSelected);
 
     // Add table to selectedTables array
-    selectedTables.push(tableName);
+    selectedTables[uniqueId] = tableName;
   }
 }
 
+// Function to handle table selection and removal correctly
+const handleTableSelection = (e, tableName, index) => {
+  const selectedTablesDiv = document.getElementById('selected-tables');
+
+  const uniqueId = `${tableName}-${index}`;
+  const tableNode = selectedTablesDiv.querySelector(`[data-id="${uniqueId}"]`);
+
+  if (tableNode) {
+    // Remove the table from the selected list if it's already there
+    tableNode.remove();
+    delete selectedTables[uniqueId];
+  } else {
+    // Add the table to the selected list if it's not already there
+    selectTable(e.target, tableName, index);
+  }
+};
 // Call the renderSchema function to render the schema data dynamically
 renderSchema(schemaData);
 
@@ -518,6 +533,6 @@ closeSchemaButton.addEventListener('click', () => {
 // Save changes to the schema (you can then send the updated schema to the server)
 saveSchemaButton.addEventListener('click', () => {
   schemaOverlay.classList.add('hidden');
-  const payload = JSON.stringify({ schema_context_update: selectedTables });
-  sendUserMessage(payload, `Updated datable schema context: ${selectedTables.join(", ")}`)
+  const payload = JSON.stringify({ schema_context_update: Object.values(selectedTables) });
+  sendUserMessage(payload, `Updated datable schema context: ${Object.values(selectedTables).join(", ")}`)
 });
