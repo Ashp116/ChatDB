@@ -10,6 +10,12 @@ const pageSizeSelect = document.getElementById('page-size');
 const currentPageText = document.getElementById('current-page');
 const totalPagesText = document.getElementById('total-pages');
 const errorOverlay = document.getElementById('error-overlay');
+const schemaButton = document.getElementById('edit-schema-button');
+const schemaOverlay = document.getElementById('schema-overlay');
+const closeSchemaButton = document.getElementById('close-schema-button');
+const saveSchemaButton = document.getElementById('save-schema-button');
+const schemaContent = document.getElementById('schema-content');
+const selectedTablesDiv = document.getElementById('selected-tables');
 
 let table_data = [];
 let filteredData = [];
@@ -19,6 +25,9 @@ let totalPages = 1;
 
 let botTypingElement;
 let botTypingIntervalId;
+
+let schemaData = [];
+let selectedTables = {};
 
 // WebSocket Connection
 const ws = new WebSocket("ws://localhost:8765");
@@ -41,24 +50,48 @@ ws.addEventListener("message", (event) => {
     }, 1);
   }
 
-  const botMessage = document.createElement('div');
-  botMessage.className = 'p-3 bg-gray-700 text-gray-300 rounded-lg max-w-[70%] mb-2 self-start';
-  botMessage.textContent = `${data.reply}`;
-  chatBox.appendChild(botMessage);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  if (!data) return;
 
-  setTimeout(() => {
-    // Display the DB result if available
-    if (data.db_result) {
-      table_data = data.db_result;
-      filteredData = [...table_data]; // Initially set the filtered data to all data
-      populateDbTable(filteredData);
-    } else {
-      table_data = [];
-      filteredData = [];
-      populateDbTable(filteredData);
+  if (data['reply']) {
+    sendBotMessage(`${data.reply}`)
+
+    setTimeout(() => {
+      // Display the DB result if available
+      if (data.db_result) {
+        table_data = data.db_result;
+        filteredData = [...table_data]; // Initially set the filtered data to all data
+        populateDbTable(filteredData);
+      } else {
+        table_data = [];
+        filteredData = [];
+        populateDbTable(filteredData);
+      }
+    }, 500);
+  }
+  else if (data['db_schema_context']) {
+    data['db_schema_context']['schema_data'].forEach((row) => {
+      if (data['db_schema_context']['tables'].indexOf(row.tableName) === -1)
+        return
+
+      let uniqueId = `${row.tableName}-`;
+
+      row.columns.forEach((val) => {
+        uniqueId += `${val.name}(${val.dataType})`;
+      })
+
+      selectedTables[uniqueId] = row.tableName;
+    })
+
+    while (selectedTablesDiv.firstChild) {
+      selectedTablesDiv.firstChild.remove();
     }
-  }, 500);
+
+    schemaData = data['db_schema_context']['schema_data'];
+    renderSchema(schemaData);
+  }
+  else if (data['schema_context_updated']) {
+    sendBotMessage(`Updated the database schema context ${data['schema_context_updated'].join(", ")}`);
+  }
 });
 
 // Handle WebSocket Errors
@@ -93,8 +126,22 @@ const botTyping = () => {
   }, 500);
 };
 
+// Bot message
+const sendBotMessage = (message) => {
+  const botMessage = document.createElement('div');
+  botMessage.className = 'p-3 bg-gray-700 text-gray-300 rounded-lg max-w-[70%] mb-2 self-start';
+  botMessage.textContent = message;
+  chatBox.appendChild(botMessage);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Send payload to websocket server
+const sendPayload = (payload) => {
+    ws.send(payload);
+}
+
 const sendUserMessage = (payload, message) => {
-  ws.send(payload);
+  sendPayload(payload);
 
   // Display user message in the chat box
   const userMessage = document.createElement('div');
@@ -262,49 +309,6 @@ const sortTable = (header) => {
 // Initial population (assuming table_data is available)
 populateDbTable(table_data);
 
-
-const schemaButton = document.getElementById('edit-schema-button');
-const schemaOverlay = document.getElementById('schema-overlay');
-const closeSchemaButton = document.getElementById('close-schema-button');
-const saveSchemaButton = document.getElementById('save-schema-button');
-const schemaContent = document.getElementById('schema-content');
-
-// Sample schema data (should be replaced with actual database schema data)
-const schemaData = [
-  {
-    tableName: 'Users',
-    columns: [
-      { name: 'ID', dataType: 'INTEGER' },
-      { name: 'Name', dataType: 'VARCHAR(100)' },
-      { name: 'Email', dataType: 'VARCHAR(100)' }
-    ]
-  },
-  {
-    tableName: 'Orders',
-    columns: [
-      { name: 'OrderID', dataType: 'INTEGER' },
-      { name: 'UserID', dataType: 'INTEGER' },
-      { name: 'Amount', dataType: 'DECIMAL' }
-    ]
-  },
-    {
-    tableName: 'Users',
-    columns: [
-      { name: 'ID', dataType: 'INTEGER' },
-      { name: 'Name', dataType: 'VARCHAR(100)' },
-      { name: 'Email', dataType: 'VARCHAR(100)' }
-    ]
-  },
-  {
-    tableName: 'Orders',
-    columns: [
-      { name: 'OrderID', dataType: 'INTEGER' },
-      { name: 'UserID', dataType: 'INTEGER' },
-      { name: 'Amount', dataType: 'DECIMAL' }
-    ]
-  },
-];
-
 // Update the renderSchema function to add event listeners correctly
 function renderSchema(schemaData) {
   const schemaContent = document.getElementById('schema-content');
@@ -356,9 +360,43 @@ function renderSchema(schemaData) {
       'p-2',
       'rounded-md'
     );
+
+    let uniqueId = `${table.tableName}-`
+
+    table.columns.forEach((val) => {
+      uniqueId += `${val.name}(${val.dataType})`;
+    })
+
     tableNameText.addEventListener('click', (e) => {
-      handleTableSelection(e, table.tableName, index);
+      handleTableSelection(e, table.tableName, uniqueId);
     });
+
+
+    if (selectedTables[uniqueId]) {
+      // Select the table
+      tableNameText.classList.add('bg-cyan-600', 'text-white');
+
+      // Add table to the selected list
+      const tableSelected = document.createElement('div');
+      tableSelected.classList.add('bg-cyan-600', 'text-white', 'px-4', 'py-2', 'rounded-lg', 'cursor-pointer', 'transition', 'duration-200', 'hover:bg-red-400');
+      tableSelected.textContent = table.tableName;
+
+      // Assign the unique ID to the selected table
+      tableSelected.setAttribute('data-id', uniqueId);
+      tableSelected.setAttribute('data-table', table.tableName);
+
+      // Add event to toggle selection when clicked again
+      tableSelected.onclick = () => {
+        // Deselect the table when clicked again
+        selectTable(tableNameText, table.tableName, uniqueId);
+      };
+
+      // Append the table to the selected tables list
+      selectedTablesDiv.appendChild(tableSelected);
+
+      // Add table to selectedTables array
+      selectedTables[uniqueId] = table.tableName;
+    }
 
     // Append the toggle icon and table name text to the tableNameContainer
     tableNameContainer.appendChild(toggleIcon); // Add the minus sign for collapse/expand
@@ -445,25 +483,16 @@ function applyTreeVisuals() {
   });
 }
 
-// Array to store selected tables
-let selectedTables = {};
-
 // Function to select/deselect tables
-function selectTable(node, tableName, tableIndex) {
+function selectTable(node, tableName, uniqueId) {
   // Prevent event propagation to parent nodes
   event.stopPropagation();
 
-  const item = node;
-  const selectedTablesDiv = document.getElementById('selected-tables');
-
-  // Create a unique ID based on tableName and its index
-  const uniqueId = `${tableName}-${tableIndex}`;
-
   // Toggle selection
-  if (item.classList.contains('bg-cyan-600')) {
+  if (node.classList.contains('bg-cyan-600')) {
     // Deselect the table
-    item.classList.remove('bg-cyan-600', 'text-white');
-    item.classList.add('text-gray-200');
+    node.classList.remove('bg-cyan-600', 'text-white');
+    node.classList.add('text-gray-200');
 
     // Remove from selected list using uniqueId
     const selectedItem = selectedTablesDiv.querySelector(`[data-id="${uniqueId}"]`);
@@ -475,7 +504,7 @@ function selectTable(node, tableName, tableIndex) {
     delete selectedTables[uniqueId];
   } else {
     // Select the table
-    item.classList.add('bg-cyan-600', 'text-white');
+    node.classList.add('bg-cyan-600', 'text-white');
 
     // Add table to the selected list
     const tableSelected = document.createElement('div');
@@ -489,7 +518,7 @@ function selectTable(node, tableName, tableIndex) {
     // Add event to toggle selection when clicked again
     tableSelected.onclick = () => {
       // Deselect the table when clicked again
-      selectTable(item, tableName, tableIndex);
+      selectTable(node, tableName, uniqueId);
     };
 
     // Append the table to the selected tables list
@@ -501,10 +530,7 @@ function selectTable(node, tableName, tableIndex) {
 }
 
 // Function to handle table selection and removal correctly
-const handleTableSelection = (e, tableName, index) => {
-  const selectedTablesDiv = document.getElementById('selected-tables');
-
-  const uniqueId = `${tableName}-${index}`;
+const handleTableSelection = (e, tableName, uniqueId) => {
   const tableNode = selectedTablesDiv.querySelector(`[data-id="${uniqueId}"]`);
 
   if (tableNode) {
@@ -513,7 +539,7 @@ const handleTableSelection = (e, tableName, index) => {
     delete selectedTables[uniqueId];
   } else {
     // Add the table to the selected list if it's not already there
-    selectTable(e.target, tableName, index);
+    selectTable(e.target, tableName, uniqueId);
   }
 };
 // Call the renderSchema function to render the schema data dynamically
@@ -521,8 +547,13 @@ renderSchema(schemaData);
 
 // Open schema overlay
 schemaButton.addEventListener('click', () => {
+  schemaData = [];
+
+  ws.send(JSON.stringify({
+    get_schema_context: true
+  }));
+
   schemaOverlay.classList.remove('hidden');
-  renderSchema(schemaData); // Render the schema when opening
 });
 
 // Close schema overlay
@@ -534,5 +565,6 @@ closeSchemaButton.addEventListener('click', () => {
 saveSchemaButton.addEventListener('click', () => {
   schemaOverlay.classList.add('hidden');
   const payload = JSON.stringify({ schema_context_update: Object.values(selectedTables) });
-  sendUserMessage(payload, `Updated datable schema context: ${Object.values(selectedTables).join(", ")}`)
+  sendPayload(payload);
+  botTyping();
 });

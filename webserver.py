@@ -32,6 +32,19 @@ class Webserver:
     current_client = None
     sql_transformer = SQLTransformer(auto_connect=False)
 
+    def user_question(self, data):
+        generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
+        response = {"reply": f"Generated SQL: {generated_sql}"}
+
+        try:
+            result = self.sql_transformer.execute_sql_query(generated_sql)
+            response["db_result"] = result
+        except Exception as e:
+            response["db_result"] = None
+            response["error"] = str(e)
+
+        return response
+
     async def handle_connection(self, websocket):
         # Disconnect the previous client if there is one
         if self.current_client is not None:
@@ -50,17 +63,15 @@ class Webserver:
 
                 # Example: Parse the message and send back a response
                 data = json.loads(message)
+                response = {}
 
-                generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
-                response = {"reply": f"Generated SQL: {generated_sql}"}
-
-                try:
-                    result = self.sql_transformer.execute_sql_query(generated_sql)
-                    response["db_result"] = result
-                except Exception as e:
-                    response["db_result"] = None
-                    response["error"] = str(e)
-
+                if 'user_input' in data:
+                    response = self.user_question(data)
+                elif 'get_schema_context' in data:
+                    response['db_schema_context'] = self.sql_transformer.export_db_schema_payload()
+                    response['get_schema_context'] = True
+                elif 'schema_context_update' in data:
+                    response["schema_context_updated"] = self.sql_transformer.update_db_schema(data['schema_context_update'])
                 await websocket.send(json.dumps(response, cls=CustomJSONEncoder))
         except websockets.exceptions.ConnectionClosed as e:
             print("Connection closed:", e)
