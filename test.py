@@ -1,3 +1,5 @@
+import os
+
 from transformers import pipeline
 from datetime import datetime
 import re
@@ -35,3 +37,27 @@ def text_to_timestamp(input_text):
 input_text = "Jan of 2023"
 timestamp_string = text_to_timestamp(input_text)
 print(timestamp_string)  # Output: "2023-01-01 00:00:00"
+
+
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import numpy as np
+
+# Specify the directory where you extracted the model
+current_dir = os.getcwd()
+local_model_dir = current_dir+"\\classifier\\trained_model.zip"
+
+# Load the model and tokenizer from the local directory
+model = AutoModelForSequenceClassification.from_pretrained(local_model_dir)
+tokenizer = AutoTokenizer.from_pretrained(local_model_dir)
+
+print("Model and tokenizer loaded successfully")
+
+def predict(text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    outputs = model(**inputs)
+    logits = outputs.logits.detach().numpy()
+    prediction = np.argmax(logits, axis=1)[0]
+    return "SQL" if prediction == 1 else "Other"
+
+print(predict("Give me all the users"))
+
