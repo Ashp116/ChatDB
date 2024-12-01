@@ -499,6 +499,8 @@ const handleTableSelection = (e, tableName, uniqueId) => {
     // Remove the table from the selected list if it's already there
     tableNode.remove();
     delete selectedTables[uniqueId];
+    e.target.classList.remove('bg-cyan-600', 'text-white');
+    e.target.classList.add('text-gray-200');
   } else {
     // Add the table to the selected list if it's not already there
     selectTable(e.target, tableName, uniqueId);
