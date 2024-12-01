@@ -29,6 +29,8 @@ let botTypingIntervalId;
 let schemaData = [];
 let selectedTables = {};
 
+let sortOrder = 'asc'; // Ascending by default
+
 // WebSocket Connection
 const ws = new WebSocket("ws://localhost:8765");
 
@@ -140,8 +142,9 @@ const sendPayload = (payload) => {
     ws.send(payload);
 }
 
+// Send messages through the websocket
 const sendUserMessage = (payload, message) => {
-  sendPayload(payload);
+  if (payload) sendPayload(payload);
 
   // Display user message in the chat box
   const userMessage = document.createElement('div');
@@ -149,12 +152,13 @@ const sendUserMessage = (payload, message) => {
   userMessage.textContent = `You: ${message}`;
   chatBox.appendChild(userMessage);
   chatInput.value = '';
+  chatInput.dispatchEvent(new Event('change')); // To update the chat input field height
   chatBox.scrollTop = chatBox.scrollHeight;
   botTyping()
 }
 
-// Send a Message to the Server
-sendButton.addEventListener('click', () => {
+// Handle when there is a user input in the chat input element
+const OnUserInput = () => {
   const message = chatInput.value.trim();
 
   if (message) {
@@ -162,7 +166,21 @@ sendButton.addEventListener('click', () => {
     const payload = JSON.stringify({ user_input: message });
     sendUserMessage(payload, message);
   }
-});
+}
+
+// Function to handle user input field resizing
+function adjustUserInputFieldHeight() {
+  if (chatInput.value.trim() === '') {
+    // Reset height to default when content is empty
+    chatInput.style.height = 'auto';
+    chatInput.style.overflowY = 'hidden';
+  } else {
+    // Adjust height dynamically for content
+    chatInput.style.height = 'auto'; // Reset height to calculate new size
+    chatInput.style.height = `${Math.min(chatInput.scrollHeight, 160)}px`; // Set height up to max-h-40
+    chatInput.style.overflowY = chatInput.scrollHeight > 160 ? 'auto' : 'hidden'; // Enable scrolling if needed
+  }
+}
 
 // Function to populate the DB table with paginated data
 const populateDbTable = (data, update = false) => {
@@ -236,60 +254,7 @@ const updatePaginationControls = (currentPage, totalPages) => {
   pageSizeSelect.value = pageSize;
 };
 
-// Pagination button actions
-prevButton.addEventListener('click', () => {
-  if (currentPage > 1) {
-    currentPage--;
-    populateDbTable(filteredData);
-  }
-});
-
-nextButton.addEventListener('click', () => {
-  if (currentPage < totalPages) {
-    currentPage++;
-    populateDbTable(filteredData);
-  }
-});
-
-// Page size change
-pageSizeSelect.addEventListener('change', (event) => {
-  pageSize = parseInt(event.target.value);
-  currentPage = 1;
-  populateDbTable(filteredData);
-});
-
-// Search Functionality with Column Filter
-searchInput.addEventListener('input', () => {
-  const searchQuery = searchInput.value.trim().toLowerCase();
-
-  // Check if the search query contains a column filter (e.g., name=John)
-  const columnSearchMatch = searchQuery.match(/^(\w+)\s*=\s*(.+)$/);
-
-  if (columnSearchMatch) {
-    const [_, column, searchTerm] = columnSearchMatch;
-
-    // Check if the column exists and filter accordingly
-    if (table_data[0][column]) {
-      const filteredData = table_data.filter(row =>
-        row[column].toString().toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      // Populate DB table with filtered results
-      populateDbTable(filteredData);
-    }
-  } else {
-    // If no column-specific search, search across all columns
-    const filteredData = table_data.filter(row =>
-      Object.values(row).some(value =>
-        value.toString().toLowerCase().includes(searchQuery)
-      )
-    );
-    // Populate DB table with filtered results
-    populateDbTable(filteredData);
-  }
-});
-
 // Sorting Functionality
-let sortOrder = 'asc'; // Ascending by default
 const sortTable = (header) => {
   filteredData.sort((a, b) => {
     if (a[header] < b[header]) {
@@ -305,9 +270,6 @@ const sortTable = (header) => {
   sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
   populateDbTable(filteredData, true);
 };
-
-// Initial population (assuming table_data is available)
-populateDbTable(table_data);
 
 // Update the renderSchema function to add event listeners correctly
 function renderSchema(schemaData) {
@@ -542,8 +504,72 @@ const handleTableSelection = (e, tableName, uniqueId) => {
     selectTable(e.target, tableName, uniqueId);
   }
 };
-// Call the renderSchema function to render the schema data dynamically
-renderSchema(schemaData);
+
+
+// Pagination button actions
+prevButton.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--;
+    populateDbTable(filteredData);
+  }
+});
+
+nextButton.addEventListener('click', () => {
+  if (currentPage < totalPages) {
+    currentPage++;
+    populateDbTable(filteredData);
+  }
+});
+
+// Page size change
+pageSizeSelect.addEventListener('change', (event) => {
+  pageSize = parseInt(event.target.value);
+  currentPage = 1;
+  populateDbTable(filteredData);
+});
+
+// Search Functionality with Column Filter
+searchInput.addEventListener('input', () => {
+  const searchQuery = searchInput.value.trim().toLowerCase();
+
+  // Check if the search query contains a column filter (e.g., name=John)
+  const columnSearchMatch = searchQuery.match(/^(\w+)\s*=\s*(.+)$/);
+
+  if (columnSearchMatch) {
+    const [_, column, searchTerm] = columnSearchMatch;
+
+    // Check if the column exists and filter accordingly
+    if (table_data[0][column]) {
+      const filteredData = table_data.filter(row =>
+        row[column].toString().toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      // Populate DB table with filtered results
+      populateDbTable(filteredData);
+    }
+  } else {
+    // If no column-specific search, search across all columns
+    const filteredData = table_data.filter(row =>
+      Object.values(row).some(value =>
+        value.toString().toLowerCase().includes(searchQuery)
+      )
+    );
+    // Populate DB table with filtered results
+    populateDbTable(filteredData);
+  }
+});
+
+// Attach listeners to update height
+chatInput.addEventListener('input', adjustUserInputFieldHeight);
+chatInput.addEventListener('change', adjustUserInputFieldHeight);
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    OnUserInput()
+  }
+});
+
+// Send a Message to the Server
+sendButton.addEventListener('click', OnUserInput);
 
 // Open schema overlay
 schemaButton.addEventListener('click', () => {
@@ -568,3 +594,9 @@ saveSchemaButton.addEventListener('click', () => {
   sendPayload(payload);
   botTyping();
 });
+
+
+// Initial population (assuming table_data is available)
+populateDbTable(table_data);
+// Call the renderSchema function to render the schema data dynamically
+renderSchema(schemaData);
