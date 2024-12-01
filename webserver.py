@@ -8,10 +8,24 @@ from decimal import Decimal
 
 import websockets
 import json
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import numpy as np
 from SQLTransformer import SQLTransformer
 
 current_dir = os.path.dirname(__file__)
 URL = os.path.join(current_dir, 'public', 'index.html')
+
+# Load the input classifier model and tokenizer from the local directory
+local_model_dir = os.getcwd()+"\\classifier\\trained_model"
+input_classifier = AutoModelForSequenceClassification.from_pretrained(local_model_dir)
+input_classifying_tokenizer = AutoTokenizer.from_pretrained(local_model_dir)
+
+def classify_text(text):
+    inputs = input_classifying_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    outputs = input_classifier(**inputs)
+    logits = outputs.logits.detach().numpy()
+    prediction = np.argmax(logits, axis=1)[0]
+    return "SQL" if prediction == 1 else "Other"
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -33,15 +47,25 @@ class Webserver:
     sql_transformer = SQLTransformer(auto_connect=False)
 
     def user_question(self, data):
-        generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
-        response = {"reply": f"Generated SQL: {generated_sql}"}
+        input_type = classify_text(data['user_input'])
+        response = {}
 
-        try:
-            result = self.sql_transformer.execute_sql_query(generated_sql)
-            response["db_result"] = result
-        except Exception as e:
-            response["db_result"] = None
-            response["error"] = str(e)
+        if input_type == "Other":
+            response['reply'] = """Oh ho! I don't quite understand that, but no worries—I'm here to help! 😅 
+                I can assist you in searching your database and pulling the information you need. 
+                Just let me know what you're looking for!
+                """
+
+        elif input_type == "SQL":
+            generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
+            response = {"reply": f"Generated SQL: {generated_sql}"}
+
+            try:
+                result = self.sql_transformer.execute_sql_query(generated_sql)
+                response["db_result"] = result
+            except Exception as e:
+                response["db_result"] = None
+                response["error"] = str(e)
 
         return response
 
