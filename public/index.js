@@ -92,7 +92,13 @@ ws.addEventListener("message", (event) => {
     renderSchema(schemaData);
   }
   else if (data['schema_context_updated']) {
-    sendBotMessage(`Updated the database schema context ${data['schema_context_updated'].join(", ")}`);
+       sendBotMessage(`
+          <p>I’ve just updated my database schema context to following tables:</p>
+          <ul style="list-style-type: disc; padding-left: 20px;">
+            ${data['schema_context_updated'].map(table => `<li><strong>${table}</strong></li>`).join('')}
+          </ul>
+        `, true);
+
   }
 });
 
@@ -129,10 +135,13 @@ const botTyping = () => {
 };
 
 // Bot message
-const sendBotMessage = (message) => {
+const sendBotMessage = (message, isMsgHTML) => {
   const botMessage = document.createElement('div');
   botMessage.className = 'p-3 bg-gray-700 text-gray-300 rounded-lg max-w-[70%] mb-2 self-start';
-  botMessage.textContent = message;
+
+  if (isMsgHTML) botMessage.innerHTML = message;
+  else botMessage.textContent = message;
+
   chatBox.appendChild(botMessage);
   chatBox.scrollTop = chatBox.scrollHeight;
 }

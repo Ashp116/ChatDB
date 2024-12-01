@@ -51,10 +51,7 @@ class Webserver:
         response = {}
 
         if input_type == "Other":
-            response['reply'] = """Oh ho! I don't quite understand that, but no worries—I'm here to help! 😅 
-                I can assist you in searching your database and pulling the information you need. 
-                Just let me know what you're looking for!
-                """
+            response['reply'] = """Oh ho! I don't quite understand that, but no worries—I'm here to help! 😅 I can assist you in searching your database and pulling the information you need. Just let me know what you're looking for!"""
 
         elif input_type == "SQL":
             generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
