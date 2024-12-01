@@ -58,14 +58,18 @@ class Webserver:
 
         elif input_type == "SQL":
             generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
-            response = {"reply": f"Generated SQL: {generated_sql}"}
 
-            try:
-                result = self.sql_transformer.execute_sql_query(generated_sql)
-                response["db_result"] = result
-            except Exception as e:
-                response["db_result"] = None
-                response["error"] = str(e)
+            if "error" in generated_sql.lower():
+                response = {"reply": """Oh ho! That request has me spinning my gears. 🤖 Try rephrasing it, and I’ll do my best to assist you!"""}
+            else:
+                response = {"reply": f"Generated SQL: {generated_sql}"}
+
+                try:
+                    result = self.sql_transformer.execute_sql_query(generated_sql)
+                    response["db_result"] = result
+                except Exception as e:
+                    response["db_result"] = None
+                    response["error"] = str(e)
 
         return response
 
