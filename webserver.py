@@ -60,7 +60,7 @@ class Webserver:
             generated_sql = self.sql_transformer.generate_sql_query(data["user_input"])
 
             if "error" in generated_sql.lower():
-                response = {"reply": """Oh ho! That request has me spinning my gears. 🤖 Try rephrasing it, and I’ll do my best to assist you!"""}
+                response = {"reply": """Oh ho! That request has me spinning my gears. 🤖 Try rephrasing it and let me know where I should look in the database—I'll do my best to assist you!"""}
             else:
                 response = {"reply": f"Generated SQL: {generated_sql}"}
 
