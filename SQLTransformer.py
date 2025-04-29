@@ -178,7 +178,7 @@ class SQLTransformer:
             return "Error: The question references invalid tables or columns not found in the schema."
 
         # Tokenize the input question with the dynamically generated schema
-        input_text = f"Question: {question} Schema: {self.db_schema_context_str} Please generate a SQL query. Please generate a SQL query that selects all columns (SELECT *) table."
+        input_text = f"Question: details of {question} Schema: {self.db_schema_context_str} Please generate a SQL query. Please generate a SQL query that selects all columns (SELECT *) table."
         model_inputs = self.tokenizer(input_text, return_tensors="pt")
 
         # Generate SQL query
