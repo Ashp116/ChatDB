@@ -53,7 +53,7 @@ cd chatdb
 pip install -r requirements.txt
 cp .env.example .env
 # Update .env with your MySQL credentials
-python app.py
+python main.py
 ```
 
 
