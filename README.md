@@ -69,6 +69,3 @@ python app.py
 
 * View formatted results instantly without writing SQL!
 
-## License
-
-This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
