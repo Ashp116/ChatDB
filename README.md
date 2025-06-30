@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/e4a289fc-0a89-43f1-97b1-94bd4b866a4a
 -  **Robust Database Connectivity**  
   Works with any MySQL database, enabling dynamic data retrieval and updates.
 
-- 🖥 **Multiple Interfaces**  
+-  **Multiple Interfaces**  
   Provides both a Command-Line Interface (CLI) and a web-based UI for flexible usage.
 
 ## Architecture
@@ -64,7 +64,7 @@ python app.py
 * Enter natural language queries like:
 
   * "Show me all the users"
-  * "Get me the user in users that has the name Ash"
+  * "Get me the user in users who has the name Ash"
   * "Show me all the inventory items"
 
 * View formatted results instantly without writing SQL!
