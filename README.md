@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/e4a289fc-0a89-43f1-97b1-94bd4b866a4a
 ## Info
 
 - **Natural Language to SQL**  
-  Converts plain English queries into optimized MySQL commands using the powerful [T5-LM-Large-text2sql-spider model by GaussAlgo](https://huggingface.co/gaussalgo/T5-LM-Large-text2sql-spider) hosted on Hugging Face. This transformer-based model is fine-tuned specifically for text-to-SQL generation on the Spider dataset, enabling accurate and complex query generation.
+  Converts plain English queries into optimized MySQL commands using the powerful [T5-LM-Large-text2sql-spider model by GaussAlgo](https://huggingface.co/gaussalgo/T5-LM-Large-text2sql-spider). This transformer-based model is fine-tuned specifically for text-to-SQL generation on the Spider dataset, enabling accurate and complex query generation.
 
 -  **Smart Input Classification**  
   Uses a binary classifier to distinguish database queries from unrelated input, improving accuracy and user experience.
@@ -48,7 +48,7 @@ flowchart LR
 ### Installation
 
 ```bash
-git clone https://github.com/Ashp116/chatdb.git
+git clone https://github.com/Ashp116/ChatDB.git
 cd chatdb
 pip install -r requirements.txt
 cp .env.example .env
